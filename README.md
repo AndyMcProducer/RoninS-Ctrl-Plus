@@ -15,6 +15,19 @@ It ships with two transport paths and a simulator:
 > implemented here in JavaScript; the Bluetooth side is reverse-engineering
 > territory and is deliberately built as a flexible testbed.
 
+## Status
+
+| Part | State |
+| --- | --- |
+| UI + simulator | Working; exercised in Chromium (connect, move, joystick, stop, telemetry) |
+| Protocol layer (DJIR + DUML) | Unit-tested; reproduces DJI's published CAN sample byte for byte |
+| Web Bluetooth transport | Implemented, **not verified on Ronin-S hardware**; UUIDs and framing are a starting hypothesis |
+| Native CAN bridge | Contract + annotated C++ example; WebSocket server still to build |
+
+Nothing here has been validated against a physical Ronin-S yet. Treat the
+Bluetooth path as a research tool and the CAN path as a documented starting
+point, not a finished product.
+
 ---
 
 ## Quick start
