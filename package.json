@@ -1,0 +1,23 @@
+{
+  "name": "ronins-ctrl-plus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Experimental web control for the DJI Ronin-S: Web Bluetooth UI, DJI R SDK protocol, and a CAN bridge",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "serve": "node tools/serve.mjs",
+    "test": "node tools/protocol-test.mjs"
+  },
+  "keywords": [
+    "dji",
+    "ronin-s",
+    "gimbal",
+    "web-bluetooth",
+    "can",
+    "djir-sdk"
+  ]
+}

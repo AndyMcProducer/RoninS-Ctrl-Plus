@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>RoninS-Ctrl-Plus</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">R+</div>
+      <div>
+        <h1>RoninS-Ctrl-Plus</h1>
+        <p class="brand-sub">Gimbal control · Web Bluetooth / CAN · experimental</p>
+      </div>
+    </div>
+
+    <div class="topbar-status">
+      <span id="statusDot" class="dot"></span>
+      <span id="statusText" class="status-text">Disconnected</span>
+      <span class="badge">v0.1.0</span>
+    </div>
+  </header>
+
+  <div class="notice">
+    <strong>Experimental.</strong>
+    The CAN side follows DJI's documented R SDK protocol. The Ronin-S Bluetooth
+    protocol is undocumented — use the simulator first, keep the gimbal on a
+    stand, and start slow. <a href="docs/bluetooth.md">Bluetooth notes</a>
+  </div>
+
+  <main class="app-grid">
+    <aside class="sidebar">
+      <section class="card">
+        <div class="card-head">
+          <h2>Connection</h2>
+          <span id="connBadge" class="pill">offline</span>
+        </div>
+
+        <label class="field">
+          <span>Transport</span>
+          <select id="transport">
+            <option value="sim">Simulator</option>
+            <option value="ble">Bluetooth (Web Bluetooth)</option>
+            <option value="bridge">CAN bridge (WebSocket)</option>
+          </select>
+        </label>
+
+        <div id="bleFields" class="field-stack hidden">
+          <label class="field">
+            <span>Name filter <em>blank = all devices</em></span>
+            <input id="nameFilter" type="text" value="Ronin" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Service UUIDs <em>comma separated</em></span>
+            <input id="serviceUuids" type="text"
+              value="0000fff0-0000-1000-8000-00805f9b34fb"
+              autocomplete="off" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Write characteristic</span>
+            <input id="writeUuid" type="text"
+              value="0000fff5-0000-1000-8000-00805f9b34fb"
+              autocomplete="off" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Notify characteristic</span>
+            <input id="notifyUuid" type="text"
+              value="0000fff4-0000-1000-8000-00805f9b34fb"
+              autocomplete="off" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Write mode</span>
+            <select id="writeMode">
+              <option value="auto">Auto (without response, fallback)</option>
+              <option value="withoutResponse">Without response</option>
+              <option value="withResponse">With response</option>
+            </select>
+          </label>
+          <button id="discoverBtn" class="ghost small" disabled>Discover GATT</button>
+          <div id="gattTree" class="gatt-tree hidden"></div>
+        </div>
+
+        <label id="bridgeField" class="field hidden">
+          <span>Bridge URL</span>
+          <input id="bridgeUrl" type="text" value="ws://127.0.0.1:8787" autocomplete="off" spellcheck="false">
+        </label>
+
+        <div class="row">
+          <button id="connectBtn" class="primary">Connect</button>
+          <button id="disconnectBtn" class="ghost" disabled>Disconnect</button>
+        </div>
+
+        <p id="transportHint" class="hint">No hardware needed. The simulator emulates a gimbal.</p>
+
+        <div id="deviceInfo" class="device-info hidden">
+          <div><span>Device</span><strong id="deviceName">—</strong></div>
+          <div><span>Detail</span><strong id="deviceDetail">—</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Gimbal</h2>
+          <span id="telemetryAge" class="pill">no data</span>
+        </div>
+
+        <div class="telemetry">
+          <div class="axis">
+            <span class="axis-name">Yaw</span>
+            <strong id="yawValue">0.0<span>°</span></strong>
+          </div>
+          <div class="axis">
+            <span class="axis-name">Roll</span>
+            <strong id="rollValue">0.0<span>°</span></strong>
+          </div>
+          <div class="axis">
+            <span class="axis-name">Pitch</span>
+            <strong id="pitchValue">0.0<span>°</span></strong>
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="requestPosBtn" class="ghost small" disabled>Request position</button>
+          <button id="pushBtn" class="ghost small" disabled title="Enable/disable the gimbal parameter push stream (CAN command 0x0E/0x07)">Enable push</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <details>
+          <summary><h2>Advanced</h2></summary>
+
+          <div class="field-stack spaced">
+            <label class="field">
+              <span>Protocol framing</span>
+              <select id="framing">
+                <option value="duml">DUML 0x55 (BLE)</option>
+                <option value="djir">DJIR 0xAA (CAN)</option>
+              </select>
+            </label>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>Cmd set <em>hex</em></span>
+                <input id="cmdSet" type="text" value="0E" maxlength="2" spellcheck="false">
+              </label>
+              <label class="field">
+                <span>Flags <em>hex, DUML</em></span>
+                <input id="flags" type="text" value="40" maxlength="2" spellcheck="false">
+              </label>
+              <label class="field">
+                <span>Sender <em>hex, DUML</em></span>
+                <input id="sender" type="text" value="02" maxlength="2" spellcheck="false">
+              </label>
+              <label class="field">
+                <span>Receiver <em>hex, DUML</em></span>
+                <input id="receiver" type="text" value="04" maxlength="2" spellcheck="false">
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Speed limit <em><b id="speedLimitValue">45</b> °/s</em></span>
+              <input id="speedLimit" type="range" min="5" max="180" step="5" value="45">
+            </label>
+
+            <div class="check-grid">
+              <label class="check">
+                <input id="ignoreFocal" type="checkbox" checked>
+                <span>Ignore focal length</span>
+              </label>
+              <label class="check">
+                <input id="invertYaw" type="checkbox">
+                <span>Invert yaw</span>
+              </label>
+              <label class="check">
+                <input id="invertPitch" type="checkbox">
+                <span>Invert pitch</span>
+              </label>
+              <label class="check">
+                <input id="logAutoScroll" type="checkbox" checked>
+                <span>Auto-scroll log</span>
+              </label>
+            </div>
+
+            <p class="hint">
+              BLE defaults are the common DJI <code>FFF0/FFF4/FFF5</code> layout.
+              If your gimbal uses different UUIDs, discover them first — see
+              <a href="docs/bluetooth.md">docs/bluetooth.md</a>.
+            </p>
+          </div>
+        </details>
+      </section>
+    </aside>
+
+    <section class="main-col">
+      <section class="card control-card">
+        <div class="card-head">
+          <h2>Control</h2>
+          <div class="row tight">
+            <button id="recenterBtn" class="ghost small" disabled>Recenter</button>
+            <button id="stopBtn" class="danger small" disabled>Stop</button>
+          </div>
+        </div>
+
+        <div class="control-grid">
+          <div class="joystick-wrap">
+            <div id="joystick" class="joystick" tabindex="0" role="application"
+              aria-label="Gimbal joystick. Drag or use arrow keys to move, release to stop.">
+              <div class="joystick-cross" aria-hidden="true"></div>
+              <div id="joystickKnob" class="joystick-knob" aria-hidden="true"></div>
+              <span class="axis-label label-y">pitch</span>
+              <span class="axis-label label-x">yaw</span>
+            </div>
+            <p class="hint center">Hold to move · release to stop · <kbd>Esc</kbd> stops</p>
+          </div>
+
+          <div class="control-side">
+            <div class="speed-readout">
+              <div><span>Yaw</span><strong id="joyYaw">0.0</strong><em>°/s</em></div>
+              <div><span>Pitch</span><strong id="joyPitch">0.0</strong><em>°/s</em></div>
+              <div><span>Roll</span><strong id="joyRoll">0.0</strong><em>°/s</em></div>
+            </div>
+
+            <label class="field">
+              <span>Roll speed <em><b id="rollSpeedValue">0</b> °/s</em></span>
+              <input id="rollSpeed" type="range" min="-90" max="90" step="5" value="0">
+            </label>
+
+            <div class="presets">
+              <button class="ghost small preset" data-yaw="0" data-pitch="0">Center</button>
+              <button class="ghost small preset" data-yaw="-300" data-pitch="0">Left 30°</button>
+              <button class="ghost small preset" data-yaw="300" data-pitch="0">Right 30°</button>
+              <button class="ghost small preset" data-yaw="0" data-pitch="200">Up 20°</button>
+              <button class="ghost small preset" data-yaw="0" data-pitch="-200">Down 20°</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="two-col">
+        <section class="card">
+          <div class="card-head">
+            <h2>Move to</h2>
+            <span class="pill">absolute / incremental</span>
+          </div>
+
+          <div class="field-grid three">
+            <label class="field">
+              <span>Yaw <em>deg</em></span>
+              <input id="moveYaw" type="number" value="0" step="1" min="-180" max="180">
+            </label>
+            <label class="field">
+              <span>Roll <em>deg</em></span>
+              <input id="moveRoll" type="number" value="0" step="1" min="-180" max="180">
+            </label>
+            <label class="field">
+              <span>Pitch <em>deg</em></span>
+              <input id="movePitch" type="number" value="0" step="1" min="-180" max="180">
+            </label>
+          </div>
+
+          <div class="field-grid two align-end">
+            <label class="field">
+              <span>Duration <em>ms</em></span>
+              <input id="moveTime" type="number" value="1500" step="100" min="100" max="25500">
+            </label>
+            <label class="check">
+              <input id="moveIncremental" type="checkbox">
+              <span>Incremental</span>
+            </label>
+          </div>
+
+          <button id="moveBtn" class="primary" disabled>Move</button>
+          <p class="hint">Angles are clamped to ±180°. The gimbal accepts a
+            duration in 0.1 s units (min 100 ms).</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Raw command</h2>
+            <span class="pill" id="rawFramingLabel">DUML</span>
+          </div>
+
+          <div class="field-grid three">
+            <label class="field">
+              <span>Cmd set <em>hex</em></span>
+              <input id="rawCmdSet" type="text" value="0E" maxlength="2" spellcheck="false">
+            </label>
+            <label class="field">
+              <span>Cmd ID <em>hex</em></span>
+              <input id="rawCmdId" type="text" value="02" maxlength="2" spellcheck="false">
+            </label>
+            <label class="field">
+              <span>Flags <em>hex</em></span>
+              <input id="rawFlags" type="text" value="40" maxlength="2" spellcheck="false">
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Payload <em>hex</em></span>
+            <input id="rawPayload" type="text" value="01" autocomplete="off" spellcheck="false">
+          </label>
+
+          <code id="rawPreview" class="preview">—</code>
+
+          <div class="row">
+            <button id="rawSendBtn" class="primary" disabled>Build &amp; send</button>
+            <button id="rawGetPos" class="ghost small" disabled>Get position</button>
+            <button id="rawStop" class="ghost small" disabled>Stop</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Log</h2>
+          <div class="row tight">
+            <button id="clearLogBtn" class="ghost small">Clear</button>
+            <button id="copyLogBtn" class="ghost small">Copy</button>
+          </div>
+        </div>
+        <pre id="log" class="log" aria-live="polite"></pre>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <span>RoninS-Ctrl-Plus · MIT · unofficial</span>
+    <span>
+      <a href="docs/architecture.md">Architecture</a> ·
+      <a href="docs/protocol-notes.md">Protocol</a> ·
+      <a href="docs/bluetooth.md">Bluetooth</a> ·
+      <a href="bridge/README.md">CAN bridge</a>
+    </span>
+  </footer>
+
+  <script src="js/bytes.js"></script>
+  <script src="js/crc.js"></script>
+  <script src="js/djir.js"></script>
+  <script src="js/duml.js"></script>
+  <script src="js/ble.js"></script>
+  <script src="js/bridge.js"></script>
+  <script src="js/simulator.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
