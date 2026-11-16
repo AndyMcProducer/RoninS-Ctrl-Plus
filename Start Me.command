@@ -1,8 +1,9 @@
 #!/bin/bash
 # Double-click this file in Finder to run RoninS-Ctrl-Plus on a Mac.
 #
-# It starts a tiny local web server (Node.js if available, otherwise Python 3)
-# and opens the app in Chrome or Edge. No npm install, no internet needed.
+# It starts a tiny local web server and opens the app in Chrome or Edge.
+# The bundled server needs nothing installed. If it cannot run, Node.js or
+# Python 3 is used instead. No npm install, no internet needed.
 #
 # If macOS refuses to open it, see START-HERE.txt.
 
@@ -44,39 +45,50 @@ cleanup() {
   fi
 }
 
-wait_forever() {
-  SERVER_PID="$1"
-  trap cleanup EXIT INT TERM
-  wait "$SERVER_PID"
-}
-
-if command -v node >/dev/null 2>&1; then
-  echo "Starting RoninS-Ctrl-Plus with Node.js ($(node --version))..."
-  node tools/serve.mjs "$PORT" &
+run_server() {
+  # $1 = human label, remaining args = command
+  local label="$1"
+  shift
+  echo "Starting RoninS-Ctrl-Plus with $label..."
+  "$@" &
   SERVER_PID=$!
   sleep 1
+  if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    SERVER_PID=""
+    return 1
+  fi
+  trap cleanup EXIT INT TERM
   open_browser "$PORT"
   echo ""
   echo "Server: http://localhost:$PORT"
   echo "Close this window or press Ctrl+C to stop."
-  wait_forever "$SERVER_PID"
+  wait "$SERVER_PID"
   exit 0
+}
+
+BUNDLED=""
+case "$(uname -m)" in
+  arm64) BUNDLED="runtime/ronserver-darwin-arm64" ;;
+  x86_64) BUNDLED="runtime/ronserver-darwin-amd64" ;;
+esac
+
+if [ -n "$BUNDLED" ] && [ -f "$BUNDLED" ]; then
+  # The zip may carry a quarantine flag. Clear it so the bundled server runs
+  # without a Gatekeeper prompt. Harmless if the flag is not there.
+  chmod +x "$BUNDLED" 2>/dev/null || true
+  xattr -d com.apple.quarantine "$BUNDLED" 2>/dev/null || true
+  run_server "the bundled server" "$PWD/$BUNDLED" "$PORT"
+fi
+
+if command -v node >/dev/null 2>&1; then
+  run_server "Node.js ($(node --version 2>/dev/null))" node tools/serve.mjs "$PORT"
 fi
 
 if command -v python3 >/dev/null 2>&1; then
-  echo "Starting RoninS-Ctrl-Plus with Python 3..."
-  python3 tools/serve.py "$PORT" &
-  SERVER_PID=$!
-  sleep 1
-  open_browser "$PORT"
-  echo ""
-  echo "Server: http://localhost:$PORT"
-  echo "Close this window or press Ctrl+C to stop."
-  wait_forever "$SERVER_PID"
-  exit 0
+  run_server "Python 3" python3 tools/serve.py "$PORT"
 fi
 
-echo "No Node.js or Python 3 was found on this Mac."
+echo "The bundled server could not start, and no Node.js or Python 3 was found."
 echo ""
 echo "Opening the app directly instead. The simulator still works, but"
 echo "Web Bluetooth usually needs http://localhost and Chrome or Edge."
@@ -91,7 +103,8 @@ else
 fi
 
 echo ""
-echo "For full Bluetooth support, install Node.js LTS from https://nodejs.org/"
-echo "or install Python 3, then run this file again."
+echo "To fix this, unzip the download again in full, keeping the runtime folder"
+echo "next to this file. Or install Node.js LTS from https://nodejs.org/ and"
+echo "run this file again."
 echo ""
 read -r -n 1 -s -p "Press any key to close..."

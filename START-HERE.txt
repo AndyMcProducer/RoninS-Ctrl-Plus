@@ -63,16 +63,16 @@ and protocol code work before touching a real gimbal.
 5. REQUIREMENTS
 ---------------
 
-- macOS
+- macOS (Apple Silicon or Intel)
 - Google Chrome or Microsoft Edge
-- Either Node.js 18+ or Python 3 (the launcher uses whichever it finds)
 
-No npm install is needed. No internet connection is needed after downloading
-this bundle. If neither Node nor Python is present, the launcher still opens
-the app directly: the simulator works, but Web Bluetooth may be unavailable
+That is it. The download includes a small server for both Mac types, so you do
+not need Node.js, Python, npm, or an internet connection after downloading.
+
+If the bundled server cannot run, the launcher falls back to Node.js 18+ or
+Python 3 when they are present, and finally opens the app directly. In that
+last case the simulator still works, but Web Bluetooth may be unavailable
 without a localhost server.
-
-Node.js LTS: https://nodejs.org/
 
 
 6. REAL GIMBAL
@@ -102,7 +102,8 @@ clear. This project is unofficial and not affiliated with DJI.
     web/                   The app (HTML/CSS/JS)
     docs/                  Protocol, Bluetooth, and architecture notes
     bridge/                CAN bridge contract and C++ example
-    tools/                 Local servers and protocol tests
+    runtime/               Built-in server for Apple Silicon and Intel Macs
+    tools/                 Fallback servers and protocol tests
 
 Run the tests any time with:
 
@@ -134,4 +135,7 @@ Only the simulator is available
     protocol. The simulator is the safe way to explore the UI.
 
 No Node and no Python?
-    Install Node.js LTS. Then double-click the launcher again.
+    You do not need either. The runtime/ folder contains the server. If the
+    launcher says it could not start, make sure you unzipped the whole download
+    and that runtime/ sits next to Start Me.command. Do not move the app file
+    out of the folder on its own.

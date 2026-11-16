@@ -32,8 +32,9 @@ point, not a finished product.
 
 ## Quick start
 
-You need **Node.js 18+** (only for the tiny local server and protocol tests — there
-are no npm dependencies).
+For development you need **Node.js 18+** (only for the tiny local server and
+protocol tests — there are no npm dependencies). The portable macOS bundle ships
+its own server and needs nothing installed.
 
 ```powershell
 cd RoninS-Ctrl-Plus
@@ -50,12 +51,15 @@ Open <http://localhost:8080> in **Chrome** or **Edge**.
 
 The repository includes everything a Mac needs to run from a folder:
 
-- **`Start Me.command`** — double-click launcher (Node.js or Python 3 is
-  detected automatically).
+- **`Start Me.command`** — double-click launcher.
 - **`START-HERE.txt`** — plain-language instructions, Gatekeeper workaround,
   and troubleshooting.
 - **`start-mac.sh`** — the same launcher for Terminal users.
-- **`tools/serve.py`** — Python fallback server when Node is not installed.
+- **`runtime/ronserver-darwin-arm64`** and **`runtime/ronserver-darwin-amd64`** —
+  self-contained static server binaries for Apple Silicon and Intel Macs. The
+  launcher picks the right one, so no Node.js or Python installation is needed.
+- **`tools/serve.py`** / **`tools/serve.mjs`** — fallback servers and the
+  reference implementation of the same routes.
 
 A prebuilt zip is produced with:
 
@@ -66,8 +70,13 @@ bash tools/package-mac.sh
 
 Unzip it on the Mac and double-click `Start Me.command`. Chrome or Edge is still
 required for Web Bluetooth; Safari/Firefox can only run the simulator. The
-launcher falls back to opening `web/index.html` directly if neither Node nor
-Python is present, so the simulator always works.
+bundled server runs with no developer tools installed. If it is missing or
+blocked, the launcher falls back to Node.js, then Python 3, then opening
+`web/index.html` directly, so the simulator always works.
+
+The two server binaries are built from `tools/serve.go` with `CGO_ENABLED=0` and
+Go 1.27.4, before the release commit. Their licence text is in
+`runtime/GO-LICENSE.txt`.
 
 ### Try it without hardware
 
@@ -230,9 +239,14 @@ RoninS-Ctrl-Plus/
 │   └── example/             # minimal C++ DJIR_SDK wrapper
 │       ├── CMakeLists.txt
 │       └── src/main.cpp
+├── runtime/
+│   ├── ronserver-darwin-arm64  # static server for Apple Silicon
+│   ├── ronserver-darwin-amd64  # static server for Intel
+│   └── GO-LICENSE.txt          # Go runtime licence
 └── tools/
-    ├── serve.mjs            # dependency-free static server (Node)
-    ├── serve.py             # dependency-free static server (Python 3)
+    ├── serve.go             # dependency-free static server (reference)
+    ├── serve.mjs            # same server in Node
+    ├── serve.py             # same server in Python 3
     ├── package-mac.sh       # builds the portable macOS zip
     └── protocol-test.mjs    # Node protocol tests
 ```

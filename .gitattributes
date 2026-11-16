@@ -17,6 +17,7 @@
 *.json text eol=lf
 *.cpp text eol=lf
 *.h text eol=lf
+*.go text eol=lf
 *.cmake text eol=lf
 CMakeLists.txt text eol=lf
 
@@ -27,3 +28,6 @@ CMakeLists.txt text eol=lf
 *.png binary
 *.jpg binary
 *.zip binary
+
+# Prebuilt macOS server binaries.
+runtime/ronserver-darwin-* binary
