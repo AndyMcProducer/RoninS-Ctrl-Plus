@@ -1,0 +1,29 @@
+* text=auto
+
+# Shell launchers must stay LF or macOS bash fails with "bad interpreter".
+*.command text eol=lf
+*.sh text eol=lf
+
+# Source and docs stay LF so the bundle behaves the same on every platform.
+*.mjs text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+
+# Windows launchers, if added later.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.zip binary

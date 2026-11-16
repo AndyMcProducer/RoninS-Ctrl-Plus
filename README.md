@@ -46,6 +46,29 @@ Open <http://localhost:8080> in **Chrome** or **Edge**.
 `localhost` counts as a secure context, which Web Bluetooth requires. Opening
 `index.html` directly from disk will not work reliably.
 
+### Portable macOS bundle
+
+The repository includes everything a Mac needs to run from a folder:
+
+- **`Start Me.command`** — double-click launcher (Node.js or Python 3 is
+  detected automatically).
+- **`START-HERE.txt`** — plain-language instructions, Gatekeeper workaround,
+  and troubleshooting.
+- **`start-mac.sh`** — the same launcher for Terminal users.
+- **`tools/serve.py`** — Python fallback server when Node is not installed.
+
+A prebuilt zip is produced with:
+
+```bash
+bash tools/package-mac.sh
+# -> dist/RoninS-Ctrl-Plus-mac-portable.zip
+```
+
+Unzip it on the Mac and double-click `Start Me.command`. Chrome or Edge is still
+required for Web Bluetooth; Safari/Firefox can only run the simulator. The
+launcher falls back to opening `web/index.html` directly if neither Node nor
+Python is present, so the simulator always works.
+
 ### Try it without hardware
 
 1. Leave the transport on **Simulator**.
@@ -178,9 +201,13 @@ AA 1A 00 03 00 00 00 00 22 11 A2 42 0E 00 20 00 30 00 40 00 01 14 7B 40 97 BE
 ```
 RoninS-Ctrl-Plus/
 ├── README.md
+├── START-HERE.txt
+├── Start Me.command        # macOS double-click launcher
+├── start-mac.sh            # Terminal launcher for macOS
 ├── LICENSE
 ├── package.json
 ├── .gitignore
+├── .gitattributes
 ├── .github/workflows/tests.yml
 ├── docs/
 │   ├── architecture.md      # transports, browser constraints, bridge plan
@@ -204,7 +231,9 @@ RoninS-Ctrl-Plus/
 │       ├── CMakeLists.txt
 │       └── src/main.cpp
 └── tools/
-    ├── serve.mjs            # dependency-free static server
+    ├── serve.mjs            # dependency-free static server (Node)
+    ├── serve.py             # dependency-free static server (Python 3)
+    ├── package-mac.sh       # builds the portable macOS zip
     └── protocol-test.mjs    # Node protocol tests
 ```
 

@@ -1,0 +1,137 @@
+RoninS-Ctrl-Plus - macOS quick start
+====================================
+
+A small experimental app for controlling a DJI Ronin-S gimbal. It includes a
+simulator, so you can try it without any hardware.
+
+
+1. START IT
+-----------
+
+Double-click:
+
+    Start Me.command
+
+A Terminal window opens, a tiny local web server starts, and Chrome or Edge
+should open at http://localhost:8080.
+
+If nothing opens, open Chrome/Edge yourself and go to:
+
+    http://localhost:8080
+
+To stop it, close the Terminal window or press Ctrl+C in it.
+
+
+2. IF macOS BLOCKS THE FILE
+----------------------------
+
+Because the file came from the internet, macOS may say it cannot be opened.
+
+    Right-click "Start Me.command" -> Open -> Open
+
+Or open Terminal in this folder and run:
+
+    chmod +x "Start Me.command"
+    ./Start Me.command
+
+You can always bypass the executable bit with:
+
+    bash "Start Me.command"
+
+
+3. USE CHROME OR EDGE
+---------------------
+
+Safari and Firefox do not support Web Bluetooth. Chrome or Edge on macOS do.
+
+The simulator works in any browser, but Bluetooth control needs Chrome/Edge
+plus a localhost address.
+
+
+4. WHAT TO TRY FIRST
+--------------------
+
+- Leave "Transport" on "Simulator".
+- Click "Connect".
+- Click "Left 30" or drag the joystick.
+- Press "Stop" or Escape to stop movement.
+
+The simulator shows live yaw/roll/pitch telemetry, so you can confirm the UI
+and protocol code work before touching a real gimbal.
+
+
+5. REQUIREMENTS
+---------------
+
+- macOS
+- Google Chrome or Microsoft Edge
+- Either Node.js 18+ or Python 3 (the launcher uses whichever it finds)
+
+No npm install is needed. No internet connection is needed after downloading
+this bundle. If neither Node nor Python is present, the launcher still opens
+the app directly: the simulator works, but Web Bluetooth may be unavailable
+without a localhost server.
+
+Node.js LTS: https://nodejs.org/
+
+
+6. REAL GIMBAL
+--------------
+
+Web Bluetooth:
+- Power on the Ronin-S and disconnect it from the DJI Ronin phone app.
+- Choose "Bluetooth (Web Bluetooth)", then "Connect".
+- The Ronin-S BLE UUIDs and framing are NOT officially documented. The app
+  starts with DJI's common FFF0/FFF4/FFF5 layout and exposes raw sends, GATT
+  discovery, and a hex log for experiments.
+
+CAN / DJIR_SDK:
+- Requires a USB-CAN-II C adapter and the native bridge, which is not built
+  yet. See bridge/README.md for the hardware setup and JSON contract.
+
+Keep the gimbal on a stand, start with low speeds, and keep hands and cables
+clear. This project is unofficial and not affiliated with DJI.
+
+
+7. WHAT IS IN THIS FOLDER
+-------------------------
+
+    Start Me.command       Double-click launcher
+    START-HERE.txt         This file
+    README.md              Full project documentation
+    web/                   The app (HTML/CSS/JS)
+    docs/                  Protocol, Bluetooth, and architecture notes
+    bridge/                CAN bridge contract and C++ example
+    tools/                 Local servers and protocol tests
+
+Run the tests any time with:
+
+    node tools/protocol-test.mjs
+
+(or `npm test` if you have Node installed)
+
+
+8. TROUBLESHOOTING
+------------------
+
+"Port already in use"
+    The launcher tries 8080, 8081, 8082, 8090 and 8091 automatically.
+    If all are busy, close the other server or run:
+        node tools/serve.mjs 8099
+
+"navigator.bluetooth is undefined"
+    Use Chrome or Edge, and use http://localhost, not a file:// path.
+
+Bluetooth device does not appear
+    It is probably still connected to the DJI Ronin app or another device.
+    Close that app, power-cycle the gimbal, and try again.
+
+App looks stale after editing files
+    Use a hard reload: Cmd+Shift+R.
+
+Only the simulator is available
+    That is expected without the native CAN bridge or a confirmed Ronin-S BLE
+    protocol. The simulator is the safe way to explore the UI.
+
+No Node and no Python?
+    Install Node.js LTS. Then double-click the launcher again.
